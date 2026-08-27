@@ -15,9 +15,10 @@ if(isset($_POST["create"])){
     $total = trim($_POST["total"]);
 
     if($title != '' && $price != '' && $category != ''){
-        $query = "INSERT INTO crud (title, price, taxes, ads, discount, total, category)
-                  VALUES ('$title','$price','$taxes','$ads','$discount','$total','$category')";
-        mysqli_query($conn, $query);
+        $stmt = mysqli_prepare($conn, "INSERT INTO crud (title, price, taxes, ads, discount, total, category)
+                  VALUES (?,?,?,?,?,?,?)");
+        mysqli_stmt_bind_param($stmt, "sssssss", $title, $price, $taxes, $ads, $discount, $total, $category);
+        mysqli_stmt_execute($stmt);
         header("Location: index.php");
         exit;
     }
@@ -28,7 +29,9 @@ if(isset($_POST["create"])){
 ======================= */
 if(isset($_GET['delete_id'])){
     $id = (int)$_GET['delete_id'];
-    mysqli_query($conn, "DELETE FROM crud WHERE id=$id");
+    $stmt = mysqli_prepare($conn, "DELETE FROM crud WHERE id=?");
+    mysqli_stmt_bind_param($stmt, "i", $id);
+    mysqli_stmt_execute($stmt);
     header("Location: index.php");
     exit;
 }
@@ -41,7 +44,10 @@ $title = $price = $taxes = $ads = $discount = $category = '';
 
 if(isset($_GET['edit_id'])){
     $id = (int)$_GET['edit_id'];
-    $res = mysqli_query($conn, "SELECT * FROM crud WHERE id=$id");
+    $stmt = mysqli_prepare($conn, "SELECT * FROM crud WHERE id=?");
+    mysqli_stmt_bind_param($stmt, "i", $id);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
     $row = mysqli_fetch_assoc($res);
 
     $title = $row['title'];
@@ -67,16 +73,11 @@ if(isset($_POST["update"])){
     $total = trim($_POST["total"]);
 
     if($title != '' && $price != '' && $category != ''){
-        $query = "UPDATE crud SET
-                    title='$title',
-                    price='$price',
-                    taxes='$taxes',
-                    ads='$ads',
-                    discount='$discount',
-                    total='$total',
-                    category='$category'
-                  WHERE id=$id";
-        mysqli_query($conn, $query);
+        $stmt = mysqli_prepare($conn, "UPDATE crud SET
+                    title=?, price=?, taxes=?, ads=?, discount=?, total=?, category=?
+                  WHERE id=?");
+        mysqli_stmt_bind_param($stmt, "sssssssi", $title, $price, $taxes, $ads, $discount, $total, $category, $id);
+        mysqli_stmt_execute($stmt);
         header("Location: index.php");
         exit;
     }
@@ -312,11 +313,11 @@ a:hover {
         $res = mysqli_query($conn, "SELECT * FROM crud");
         while($row = mysqli_fetch_assoc($res)){
             echo "<tr>
-                <td>{$row['id']}</td>
-                <td>{$row['title']}</td>
-                <td>{$row['price']}</td>
-                <td>{$row['total']}</td>
-                <td>{$row['category']}</td>
+                <td>" . htmlspecialchars($row['id']) . "</td>
+                <td>" . htmlspecialchars($row['title']) . "</td>
+                <td>" . htmlspecialchars($row['price']) . "</td>
+                <td>" . htmlspecialchars($row['total']) . "</td>
+                <td>" . htmlspecialchars($row['category']) . "</td>
                 <td><a href='index.php?edit_id={$row['id']}'>Edit</a></td>
                 <td><a href='index.php?delete_id={$row['id']}' onclick='return confirm(\"Delete?\")'>Delete</a></td>
             </tr>";
